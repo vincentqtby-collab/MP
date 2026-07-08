@@ -23,14 +23,14 @@ const qa   = [
 const links = [
 	{ 
 		label: 'Source Code', 
-		url: 'https://github.com/angelix1/MP',
+		url: 'https://github.com/vincentqtby-collab/MP',
 	},
 	{ 
 		label: 'Tip via PayPal', 
 		url: 'https://paypal.me/alixymizuki',
 	},
 	{ 
-		label: 'Buy him a Ko-fi', 
+		label: 'Buy me a Ko-fi', 
 		url: 'https://ko-fi.com/angel_wolf',
 	},
 ];
