@@ -12,6 +12,58 @@ const ChannelStore = findByProps("getChannel", "getDMFromUserId");
 const ChannelMessages = findByProps("_channelMessages");
 const { ActionSheetRow } = findByProps("ActionSheetRow");
 
+const plain = value => {
+    if (value == null) return value;
+
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch {
+        return undefined;
+    }
+};
+
+const num = (value, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+};
+
+const safeDiscriminator = user => {
+    const value = user?.discriminator ?? user?.discrim ?? 0;
+    const str = String(value);
+    return /^\d+$/.test(str) ? str : "0";
+};
+
+const cleanUser = user => {
+    if (!user?.id) return undefined;
+
+    const username = String(
+        user.username ??
+        user.global_name ??
+        user.globalName ??
+        user.display_name ??
+        user.displayName ??
+        "Unknown User"
+    );
+
+    const globalName = user.global_name ?? user.globalName ?? null;
+    const displayName = user.display_name ?? user.displayName ?? globalName ?? username;
+    const avatar = typeof user.avatar === "string" ? user.avatar : null;
+    const avatarDecoration = plain(user.avatar_decoration_data ?? user.avatarDecorationData) ?? null;
+    const publicFlags = user.public_flags ?? user.publicFlags ?? 0;
+
+    return Object.fromEntries(Object.entries({
+        id: String(user.id),
+        username,
+        global_name: globalName,
+        display_name: displayName,
+        discriminator: safeDiscriminator(user),
+        avatar,
+        avatar_decoration_data: avatarDecoration,
+        public_flags: num(publicFlags, 0),
+        bot: !!user.bot
+    }).filter(([, value]) => value !== undefined));
+};
+
 const cleanRef = ref => {
     if (!ref) return null;
 
@@ -83,11 +135,16 @@ export default () => before("openLazy", ActionSheet, ([component, args, actionMe
                                     FluxDispatcher.dispatch({
                                         type: "MESSAGE_UPDATE",
                                         message: {
-                                            id: message.id,
+                                            id: String(message.id),
                                             channel_id: channelId,
                                             guild_id: channel?.guild_id ?? message.guild_id ?? null,
+                                            author: cleanUser(originalMessage.author ?? message.author),
                                             content: String(targetMessage ?? ""),
                                             edited_timestamp: new Date().toISOString(),
+                                            timestamp: originalMessage.timestamp ?? message.timestamp ?? new Date().toISOString(),
+                                            attachments: plain(originalMessage.attachments ?? message.attachments) ?? [],
+                                            embeds: plain(originalMessage.embeds ?? message.embeds) ?? [],
+                                            flags: num(originalMessage.flags ?? message.flags, 0),
                                             message_reference: cleanRef(message.message_reference ?? message.messageReference)
                                         },
                                         otherPluginBypass: true
