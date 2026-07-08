@@ -5,40 +5,44 @@ import actionsheet from "./patches/actionsheet";
 import SettingPage from "./Settings";
 import { fetchDB, selfDelete } from "~lib/func/bl";
 
-export const regexEscaper = string => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const regexEscaper = string => string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 export let isEnabled = false;
 
 const deletedMessageArray = new Map();
-let unpatch;
+let unpatches = [];
 
 // [Function, ArrayOfArguments]
 const patches = [
-	[fluxDispatchPatch,   	[deletedMessageArray]],
-	[actionsheet,         	[]],
-	[selfEditPatch,			[]]
+    [fluxDispatchPatch, [deletedMessageArray]],
+    [actionsheet, []],
+    [selfEditPatch, []]
 ];
 
-
-// helper func
-const patcher = () => patches.forEach(([fn, args]) => fn(...args));
-
-const database = "https://angelix1.github.io/static_list/antied/list.json";
-
-unpatch = patcher();
+const patcher = () => patches
+    .map(([fn, args]) => fn?.(...args))
+    .filter(Boolean);
 
 export default {
-	onLoad: async () => {
+    onLoad: async () => {
+        if (!unpatches.length) unpatches = patcher();
+        isEnabled = true;
 
-		const datas = await fetchDB(database);
+        try {
+            const datas = await fetchDB(database);
+            selfDelete(datas, 15); // 15 sec
+        } catch (e) {
+            console.warn("[ANTIED Zero] Failed to check blocklist", e);
+        }
+    },
+    onUnload: () => {
+        isEnabled = false;
 
-		selfDelete(datas, 15) // 15 sec
+        unpatches.forEach(unpatch => {
+            try { unpatch?.(); } catch {}
+        });
+        unpatches = [];
+    },
+    settings: SettingPage
+};
 
-		isEnabled = true;	
-	},
-	onUnload: () => {
-		isEnabled = false;
-        
-        unpatch?.()       
-	},
-	settings: SettingPage
-}
+const database = "https://angelix1.github.io/static_list/antied/list.json";
