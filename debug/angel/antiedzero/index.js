@@ -2,7 +2,7 @@
 const ChannelMessages$1 = metro.findByProps("_channelMessages");
 const MessageStore$1 = metro.findByProps("getMessage", "getMessages");
 const EDIT_PREFIX = "`[ EDITED ]`\n\n";
-const plain = function(value) {
+const plain$1 = function(value) {
   if (value == null)
     return value;
   try {
@@ -11,33 +11,33 @@ const plain = function(value) {
     return void 0;
   }
 };
-const num = function(value, fallback = 0) {
+const num$1 = function(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 };
-const safeDiscriminator = function(user) {
+const safeDiscriminator$1 = function(user) {
   const value = user?.discriminator ?? user?.discrim ?? 0;
   const str = String(value);
   return /^\d+$/.test(str) ? str : "0";
 };
-const cleanUser = function(user) {
+const cleanUser$1 = function(user) {
   if (!user?.id)
     return void 0;
   const username = String(user.username ?? user.global_name ?? user.globalName ?? user.display_name ?? user.displayName ?? "Unknown User");
   const globalName = user.global_name ?? user.globalName ?? null;
   const displayName = user.display_name ?? user.displayName ?? globalName ?? username;
   const avatar = typeof user.avatar === "string" ? user.avatar : null;
-  const avatarDecoration = plain(user.avatar_decoration_data ?? user.avatarDecorationData) ?? null;
+  const avatarDecoration = plain$1(user.avatar_decoration_data ?? user.avatarDecorationData) ?? null;
   const publicFlags = user.public_flags ?? user.publicFlags ?? 0;
   return Object.fromEntries(Object.entries({
     id: String(user.id),
     username,
     global_name: globalName,
     display_name: displayName,
-    discriminator: safeDiscriminator(user),
+    discriminator: safeDiscriminator$1(user),
     avatar,
     avatar_decoration_data: avatarDecoration,
-    public_flags: num(publicFlags, 0),
+    public_flags: num$1(publicFlags, 0),
     bot: !!user.bot
   }).filter(function([, value]) {
     return value !== void 0;
@@ -58,16 +58,16 @@ const cleanRef$1 = function(ref) {
 const cleanMessage = function(source, extra = {}) {
   const channelId = extra.channel_id ?? source?.channel_id ?? source?.channelId;
   const channel = channelId ? ChannelStore$1.getChannel(channelId) : null;
-  const author = cleanUser(extra.author ?? source?.author);
+  const author = cleanUser$1(extra.author ?? source?.author);
   return Object.fromEntries(Object.entries({
     id: String(extra.id ?? source?.id ?? ""),
     channel_id: channelId,
     guild_id: extra.guild_id ?? source?.guild_id ?? channel?.guild_id ?? null,
     author,
     content: String(extra.content ?? source?.content ?? ""),
-    attachments: plain(extra.attachments ?? source?.attachments) ?? [],
-    embeds: plain(extra.embeds ?? source?.embeds) ?? [],
-    flags: num(extra.flags ?? source?.flags, 0),
+    attachments: plain$1(extra.attachments ?? source?.attachments) ?? [],
+    embeds: plain$1(extra.embeds ?? source?.embeds) ?? [],
+    flags: num$1(extra.flags ?? source?.flags, 0),
     edited_timestamp: extra.edited_timestamp,
     timestamp: extra.timestamp ?? source?.timestamp ?? (/* @__PURE__ */ new Date()).toISOString(),
     message_reference: cleanRef$1(extra.message_reference ?? source?.message_reference ?? source?.messageReference)
@@ -169,6 +169,47 @@ const MessageStore = metro.findByProps("getMessage", "getMessages");
 const ChannelStore = metro.findByProps("getChannel", "getDMFromUserId");
 const ChannelMessages = metro.findByProps("_channelMessages");
 const { ActionSheetRow } = metro.findByProps("ActionSheetRow");
+const plain = function(value) {
+  if (value == null)
+    return value;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return void 0;
+  }
+};
+const num = function(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+const safeDiscriminator = function(user) {
+  const value = user?.discriminator ?? user?.discrim ?? 0;
+  const str = String(value);
+  return /^\d+$/.test(str) ? str : "0";
+};
+const cleanUser = function(user) {
+  if (!user?.id)
+    return void 0;
+  const username = String(user.username ?? user.global_name ?? user.globalName ?? user.display_name ?? user.displayName ?? "Unknown User");
+  const globalName = user.global_name ?? user.globalName ?? null;
+  const displayName = user.display_name ?? user.displayName ?? globalName ?? username;
+  const avatar = typeof user.avatar === "string" ? user.avatar : null;
+  const avatarDecoration = plain(user.avatar_decoration_data ?? user.avatarDecorationData) ?? null;
+  const publicFlags = user.public_flags ?? user.publicFlags ?? 0;
+  return Object.fromEntries(Object.entries({
+    id: String(user.id),
+    username,
+    global_name: globalName,
+    display_name: displayName,
+    discriminator: safeDiscriminator(user),
+    avatar,
+    avatar_decoration_data: avatarDecoration,
+    public_flags: num(publicFlags, 0),
+    bot: !!user.bot
+  }).filter(function([, value]) {
+    return value !== void 0;
+  }));
+};
 const cleanRef = function(ref) {
   if (!ref)
     return null;
@@ -235,11 +276,16 @@ function actionsheet() {
                   common.FluxDispatcher.dispatch({
                     type: "MESSAGE_UPDATE",
                     message: {
-                      id: message.id,
+                      id: String(message.id),
                       channel_id: channelId,
                       guild_id: channel?.guild_id ?? message.guild_id ?? null,
+                      author: cleanUser(originalMessage.author ?? message.author),
                       content: String(targetMessage ?? ""),
                       edited_timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+                      timestamp: originalMessage.timestamp ?? message.timestamp ?? (/* @__PURE__ */ new Date()).toISOString(),
+                      attachments: plain(originalMessage.attachments ?? message.attachments) ?? [],
+                      embeds: plain(originalMessage.embeds ?? message.embeds) ?? [],
+                      flags: num(originalMessage.flags ?? message.flags, 0),
                       message_reference: cleanRef(message.message_reference ?? message.messageReference)
                     },
                     otherPluginBypass: true
