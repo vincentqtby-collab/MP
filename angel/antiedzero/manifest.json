@@ -1,11 +1,11 @@
 {
-    "name":"Antied Zero",
+    "name":"Antied GPT",
     "originalName": "Antied Zero",
     "description":"[1.0.1] Keeps a temporary record of deleted messages and any edits until you reload the app.",
     "main": "index.jsx",
     "authors": [
         {
-            "name": "Angelw0lf",
+            "name": "AlteredbyChatGpt",
             "id": "692632336961110087"
         }
     ],
