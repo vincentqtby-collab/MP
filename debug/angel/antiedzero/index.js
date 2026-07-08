@@ -11,6 +11,38 @@ const plain = function(value) {
     return void 0;
   }
 };
+const num = function(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+const safeDiscriminator = function(user) {
+  const value = user?.discriminator ?? user?.discrim ?? 0;
+  const str = String(value);
+  return /^\d+$/.test(str) ? str : "0";
+};
+const cleanUser = function(user) {
+  if (!user?.id)
+    return void 0;
+  const username = String(user.username ?? user.global_name ?? user.globalName ?? user.display_name ?? user.displayName ?? "Unknown User");
+  const globalName = user.global_name ?? user.globalName ?? null;
+  const displayName = user.display_name ?? user.displayName ?? globalName ?? username;
+  const avatar = typeof user.avatar === "string" ? user.avatar : null;
+  const avatarDecoration = plain(user.avatar_decoration_data ?? user.avatarDecorationData) ?? null;
+  const publicFlags = user.public_flags ?? user.publicFlags ?? 0;
+  return Object.fromEntries(Object.entries({
+    id: String(user.id),
+    username,
+    global_name: globalName,
+    display_name: displayName,
+    discriminator: safeDiscriminator(user),
+    avatar,
+    avatar_decoration_data: avatarDecoration,
+    public_flags: num(publicFlags, 0),
+    bot: !!user.bot
+  }).filter(function([, value]) {
+    return value !== void 0;
+  }));
+};
 const cleanRef$1 = function(ref) {
   if (!ref)
     return null;
@@ -26,18 +58,21 @@ const cleanRef$1 = function(ref) {
 const cleanMessage = function(source, extra = {}) {
   const channelId = extra.channel_id ?? source?.channel_id ?? source?.channelId;
   const channel = channelId ? ChannelStore$1.getChannel(channelId) : null;
+  const author = cleanUser(extra.author ?? source?.author);
   return Object.fromEntries(Object.entries({
-    id: extra.id ?? source?.id,
+    id: String(extra.id ?? source?.id ?? ""),
     channel_id: channelId,
     guild_id: extra.guild_id ?? source?.guild_id ?? channel?.guild_id ?? null,
+    author,
     content: String(extra.content ?? source?.content ?? ""),
     attachments: plain(extra.attachments ?? source?.attachments) ?? [],
     embeds: plain(extra.embeds ?? source?.embeds) ?? [],
-    flags: extra.flags ?? source?.flags ?? 0,
+    flags: num(extra.flags ?? source?.flags, 0),
     edited_timestamp: extra.edited_timestamp,
+    timestamp: extra.timestamp ?? source?.timestamp ?? (/* @__PURE__ */ new Date()).toISOString(),
     message_reference: cleanRef$1(extra.message_reference ?? source?.message_reference ?? source?.messageReference)
   }).filter(function([, value]) {
-    return value !== void 0;
+    return value !== void 0 && value !== "";
   }));
 };
 function fluxDispatchPatch(deletedMessageArray) {
@@ -73,6 +108,7 @@ function fluxDispatchPatch(deletedMessageArray) {
         ev.channelId = orig.channel_id || chId;
         ev.message = cleanMessage(orig, {
           channel_id: orig.channel_id || chId,
+          author: orig.author,
           content: orig.content,
           flags: 64
         });
@@ -103,6 +139,7 @@ function fluxDispatchPatch(deletedMessageArray) {
         ev.message = cleanMessage(msg, {
           id,
           channel_id: chId,
+          author: orig.author ?? msg.author,
           content: `${orig.content} ${EDIT_PREFIX}${msg.content}`,
           edited_timestamp: msg.edited_timestamp || (/* @__PURE__ */ new Date()).toISOString(),
           message_reference: msg.message_reference ?? orig.message_reference ?? orig.messageReference
