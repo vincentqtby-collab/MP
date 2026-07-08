@@ -30,7 +30,7 @@ const links = [
 		url: 'https://paypal.me/alixymizuki',
 	},
 	{ 
-		label: 'Buy me a Ko-fi', 
+		label: 'Buy him a Ko-fi', 
 		url: 'https://ko-fi.com/angel_wolf',
 	},
 ];
