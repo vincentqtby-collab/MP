@@ -64,3 +64,5 @@
 - `makeDefaults` nabbed from [Meqativ Library](https://github.com/meqativ/dumsane/blob/master/common/index.js)  
 - `Radial Status` idea lifted from [BetterDiscord RadialStatus](https://github.com/DiscordStyles/RadialStatus)  
 - Brain damage sponsored by Discord’s constant inconsistencies.
+### Fork Purpose And Achievements So Far
+Fixes Antied Zero crashes caused by Invalid integer: ??? in getDefaultAvatarURL on newer Discord Android builds. Sanitizes synthetic message and author payloads before dispatch.
